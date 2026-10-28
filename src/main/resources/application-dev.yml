@@ -1,0 +1,4 @@
+# Local development: Swagger UI on http://localhost:8080/swagger.html, with a token issued per demo user
+springdoc:
+  api-docs:
+    enabled: true

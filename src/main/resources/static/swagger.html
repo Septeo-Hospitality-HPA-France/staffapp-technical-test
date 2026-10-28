@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Housekeeping API</title>
+    <link rel="stylesheet" href="/webjars/swagger-ui/swagger-ui.css">
+    <style>
+        .user-bar { padding: 12px 20px; font-family: sans-serif; background: #f4f4f4; border-bottom: 1px solid #ddd; }
+        .user-bar select { margin-left: 8px; font-size: 14px; }
+    </style>
+</head>
+<body>
+<div class="user-bar">
+    <label>Call the API as<select id="user"></select></label>
+</div>
+<div id="swagger-ui"></div>
+<script src="/webjars/swagger-ui/swagger-ui-bundle.js"></script>
+<script>
+    // Dev only: fills the Authorization and X-ESTABLISHMENT-ID headers with the selected demo user.
+    // A value set through "Authorize" takes precedence, to test other combinations by hand.
+    const select = document.getElementById('user');
+    let users = [];
+
+    async function loadTokens() {
+        const selected = select.value || 'alice';
+        users = await (await fetch('/dev/tokens')).json();
+        select.replaceChildren(...users.map(u =>
+            new Option(`${u.username} — ${u.role}, establishment ${u.establishmentId}`, u.username)));
+        select.value = selected;
+    }
+
+    loadTokens();
+    // Tokens are valid for one hour
+    setInterval(loadTokens, 30 * 60 * 1000);
+
+    SwaggerUIBundle({
+        url: '/v3/api-docs',
+        dom_id: '#swagger-ui',
+        persistAuthorization: true,
+        requestInterceptor: request => {
+            const user = users.find(u => u.username === select.value);
+            if (user && request.url.includes('/api/')) {
+                request.headers['Authorization'] ??= `Bearer ${user.token}`;
+                request.headers['X-ESTABLISHMENT-ID'] ??= String(user.establishmentId);
+            }
+            return request;
+        },
+    });
+</script>
+</body>
+</html>
