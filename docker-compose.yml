@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: housekeeping
+      POSTGRES_USER: housekeeping
+      POSTGRES_PASSWORD: housekeeping
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U housekeeping -d housekeeping"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  app:
+    build: .
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/housekeeping
+      SPRING_PROFILES_ACTIVE: dev
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Runs the test suite in a container: Testcontainers starts PostgreSQL through the host's Docker socket.
+  # Usage: docker compose run --rm test
+  test:
+    image: eclipse-temurin:21-jdk
+    profiles: [test]
+    working_dir: /workspace
+    command: ["./mvnw", "-B", "clean", "test"]
+    environment:
+      TESTCONTAINERS_HOST_OVERRIDE: host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - .:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+      - maven-cache:/root/.m2
+
+volumes:
+  maven-cache:

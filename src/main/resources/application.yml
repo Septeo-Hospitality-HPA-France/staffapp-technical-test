@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: housekeeping
+  datasource:
+    url: jdbc:postgresql://localhost:5433/housekeeping
+    username: housekeeping
+    password: housekeeping
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+
+app:
+  security:
+    jwt:
+      # Dev-only signing key, shared with TestJwtFactory
+      secret: dev-only-signing-key-for-the-technical-test-0123456789
+
+# Swagger UI and the OpenAPI description are only served with the dev profile (see application-dev.yml)
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
