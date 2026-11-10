@@ -6,8 +6,11 @@ import com.staffapp.housekeeping.room.RoomRepository;
 import com.staffapp.housekeeping.staff.Staff;
 import com.staffapp.housekeeping.staff.StaffRepository;
 import java.time.Clock;
+import java.time.LocalDate;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -95,6 +98,17 @@ public class CleaningTaskService {
         task.complete(now);
         pmsOutbox.roomCleaned(task.getId(), task.getRoom().getId(), now);
         return CleaningTaskResponse.from(task);
+    }
+
+    /**
+     * Lists the tasks of the establishment of a day, of a status, or both, by day, room number and id: a stable order,
+     * so that a task never appears on two pages.
+     */
+    @Transactional(readOnly = true)
+    public CleaningTaskPage list(Long establishmentId, LocalDate day, CleaningTaskStatus status, int page, int size) {
+        var pageable = PageRequest.of(page, size, Sort.by("scheduledOn", "room.number", "id"));
+        var tasks = taskRepository.findAll(CleaningTaskSpecifications.search(establishmentId, day, status), pageable);
+        return CleaningTaskPage.from(tasks);
     }
 
     private CleaningTask findTask(Long id, Long establishmentId) {
