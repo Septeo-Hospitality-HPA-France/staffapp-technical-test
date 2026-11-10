@@ -4,9 +4,9 @@ Housekeeping API of StaffApp: campsite managers plan the cleaning of accommodati
 (property management system) is told when an accommodation is clean. Spring Boot 4, Java 21, PostgreSQL, Flyway, JWT.
 The brief is in `candidate-brief.md`, the setup in `README.md`. Decisions go in `NOTES.md` (one page, five sections).
 
-> **Status: this file is a target specification.** The branch only contains the provided project (see "Current
-> state"). Everything under "Target" is still to build. Update "Current state" as the work lands, and never describe
-> as existing what is not merged yet.
+> **Status: this file is a target specification.** The essential scope (P0) is merged on `develop` (see "Current
+> state"); what "Current state" lists as left is still to build. Update it as the work lands, and never describe as
+> existing what is not merged yet.
 
 ## Commands
 
@@ -21,26 +21,30 @@ docker compose up -d postgres        # local PostgreSQL on port 5433
 - On this Windows machine `python` is the Microsoft Store stub: it does nothing and reports no error. Never edit files
   through a Python script; use the edit tools or `sed`.
 
-## Current state (provided code, branch `main`)
+## Current state (branch `develop`)
 
-Packages under `com.staffapp.housekeeping`: `establishment`, `room` (`GET /api/rooms`, `GET /api/rooms/{id}`),
-`staff`, `pms` (`PmsClient`, `LoggingPmsClient`), `security` (JWT resource server, HS256), `tenant` (`TenantFilter`,
-`CurrentEstablishment`), `dev` (Swagger UI, `/dev/tokens`, dev profile only). Migrations V1 (schema) and V2 (demo
-data). One test class, `RoomControllerTest`.
+**Merged (P0)**: fixes C1, C2, H1, H2, C3 of the provided code (below); migrations V3 (`cleaning_task`) and V4
+(`pms_notification`); the `task` package with `POST`, `GET` (list and by id), `PATCH {assigneeId}`, `start`,
+`complete`; a simple PMS outbox (written in the `complete` transaction, sent by a scheduled relay outside any
+transaction, kept until received); an injected `Clock` ticking by the microsecond; one test class per feature.
+Without the `dev` profile the app refuses to start (no JWT key, no real PMS client): that is intended.
 
-**Known flaws, to fix first** (each with a test that reproduces it before the fix):
+**Left (P1, then P2)**: rescheduling, date rules in the campsite's zone (today or later, no start before the day),
+409 on two simultaneous completions (today a 500), field names in 400s, H3, Swagger status codes; outbox backoff,
+per-room ordering, lease with `SKIP LOCKED`, RabbitMQ client.
 
-| # | Where | Flaw | Rule broken |
-|---|-------|------|-------------|
-| C1 | `TenantFilter` | `X-ESTABLISHMENT-ID` is trusted as is, never compared with the `establishment_id` claim: any user reads another campsite | R4 |
-| C2 | `RoomService.findById` | Looks a room up by id only (IDOR) | R4 |
-| C3 | `LoggingPmsClient` | `@Component` in every profile: in production every PMS notification is logged and dropped | R5 |
-| H1 | `application.yml` | JWT signing key in the base config: anyone reading the repo signs a MANAGER token | R3, R4 |
-| H2 | `RoomService` | `RuntimeException` for a missing room: a 500 instead of a 404, no error format | API |
-| H3 | `SecurityConfiguration` | Claims not validated: `role: "STAFF MANAGER"` gives both roles, a token without `role` is authenticated | R3 |
+Flaws of the provided code, for reference:
 
-Smaller: `TenantFilter` answers in plain text; `/dev/tokens` mints any token if the dev profile reaches production;
-HS256 shared key instead of RS256/JWKS.
+| # | Where | Flaw | Rule broken | State |
+|---|-------|------|-------------|-------|
+| C1 | `TenantFilter` | `X-ESTABLISHMENT-ID` trusted as is, never compared with the `establishment_id` claim | R4 | fixed |
+| C2 | `RoomService.findById` | Looks a room up by id only (IDOR) | R4 | fixed |
+| C3 | `LoggingPmsClient` | `@Component` in every profile: in production every PMS notification is dropped | R5 | fixed |
+| H1 | `application.yml` | JWT signing key in the base config: anyone reading the repo signs a MANAGER token | R3, R4 | fixed |
+| H2 | `RoomService` | `RuntimeException` for a missing room: a 500 instead of a 404 | API | fixed |
+| H3 | `SecurityConfiguration` | Claims not validated: `role: "STAFF MANAGER"` gives both roles | R3 | left |
+
+Also left: `/dev/tokens` mints any token if the dev profile reaches production; HS256 shared key instead of RS256.
 
 ## Business rules (the Product Owner's words)
 

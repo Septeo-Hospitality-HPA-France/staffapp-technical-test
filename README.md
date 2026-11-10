@@ -37,10 +37,12 @@ The schema is created and the demo data loaded by Flyway at startup (`src/main/r
 |-----------------|--------------------------------------------------------------------------------------------------------|
 | `establishment` | `Establishment`: a campsite                                                                            |
 | `room`          | `Room` (an accommodation) and the `GET /api/rooms` and `GET /api/rooms/{id}` endpoints                 |
-| `pms`           | `PmsClient`: notifies the PMS (bookings, check-ins). Logs locally (`app.pms.client=logging`, never loaded by default). The RabbitMQ publisher is not written yet |
+| `task`          | `CleaningTask` and the `/api/cleaning-tasks` endpoints: plan, list, read, assign, start and complete   |
+| `pms`           | `PmsClient`: notifies the PMS (bookings, check-ins). Logs locally (`app.pms.client=logging`, never loaded by default). The RabbitMQ publisher is not written yet: until it is, the application refuses to start outside the dev profile. Notifications go through an outbox (`pms_notification`) sent in the background |
 | `staff`         | `Staff`: an employee, identified by their `username`                                                   |
-| `security`      | Spring Security configuration (JWT)                                                                    |
-| `tenant`        | `TenantFilter` and `CurrentEstablishment`: the establishment of the current request                    |
+| `security`      | Spring Security configuration (JWT) and the role rules                                                 |
+| `tenant`        | `TenantFilter` and `CurrentEstablishment`: the establishment of the current request, checked against the token |
+| `error`         | `ApiExceptionHandler`: errors as RFC 9457 problem details (`application/problem+json`)                 |
 | `dev`           | `dev` profile only: Swagger UI configuration and a token per demo user (`GET /dev/tokens`)             |
 
 ## Authentication
