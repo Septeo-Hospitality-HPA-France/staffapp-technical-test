@@ -5,3 +5,5 @@ app:
     jwt:
       # Same key as the dev profile, so that TestJwtFactory tokens also work against a local dev server
       secret: dev-only-signing-key-for-the-technical-test-0123456789
+  pms:
+    client: logging

@@ -37,7 +37,7 @@ The schema is created and the demo data loaded by Flyway at startup (`src/main/r
 |-----------------|--------------------------------------------------------------------------------------------------------|
 | `establishment` | `Establishment`: a campsite                                                                            |
 | `room`          | `Room` (an accommodation) and the `GET /api/rooms` and `GET /api/rooms/{id}` endpoints                 |
-| `pms`           | `PmsClient`: notifies the PMS (bookings, check-ins). Publishes to RabbitMQ in production, logs locally |
+| `pms`           | `PmsClient`: notifies the PMS (bookings, check-ins). Logs locally (`app.pms.client=logging`, never loaded by default). The RabbitMQ publisher is not written yet |
 | `staff`         | `Staff`: an employee, identified by their `username`                                                   |
 | `security`      | Spring Security configuration (JWT)                                                                    |
 | `tenant`        | `TenantFilter` and `CurrentEstablishment`: the establishment of the current request                    |
