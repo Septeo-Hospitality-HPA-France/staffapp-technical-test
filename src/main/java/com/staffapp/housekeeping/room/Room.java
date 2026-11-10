@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * An accommodation of a campsite: mobile home, chalet or tent. Its number is unique within its establishment.
@@ -52,5 +53,12 @@ public class Room {
 
     public Instant getLastCleanedAt() {
         return lastCleanedAt;
+    }
+
+    /**
+     * Hands the accommodation over: it is clean as of this time, the reception can give the keys.
+     */
+    public void markCleaned(Instant cleanedAt) {
+        this.lastCleanedAt = Objects.requireNonNull(cleanedAt, "cleanedAt");
     }
 }

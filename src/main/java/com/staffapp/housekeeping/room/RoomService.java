@@ -1,5 +1,6 @@
 package com.staffapp.housekeeping.room;
 
+import com.staffapp.housekeeping.error.NotFoundException;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,12 +25,15 @@ public class RoomService {
     }
 
     /**
-     * Returns a room by id.
+     * Returns a room of an establishment by id.
+     *
+     * @throws NotFoundException if the room does not exist or belongs to another establishment: both cases give the
+     *                           same answer, so that an id never reveals whether it exists elsewhere
      */
     @Transactional(readOnly = true)
-    public RoomResponse findById(Long id) {
-        return roomRepository.findById(id)
+    public RoomResponse findById(Long id, Long establishmentId) {
+        return roomRepository.findByIdAndEstablishmentId(id, establishmentId)
                 .map(RoomResponse::from)
-                .orElseThrow(() -> new RuntimeException("Room not found: " + id));
+                .orElseThrow(() -> new NotFoundException("Room", id));
     }
 }

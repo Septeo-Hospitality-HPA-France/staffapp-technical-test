@@ -14,9 +14,13 @@ If you have Java 21 or later, you can also build and test directly on your machi
 
 ```bash
 ./mvnw clean test                 # runs the tests (Testcontainers starts PostgreSQL on its own)
-docker compose up -d              # starts PostgreSQL locally, port 5433
-./mvnw spring-boot:run            # starts the API on http://localhost:8080
+docker compose up -d postgres     # starts PostgreSQL only, port 5433
+./mvnw spring-boot:run "-Dspring-boot.run.profiles=dev"   # starts the API on http://localhost:8080
 ```
+
+The JWT signing key has no default value: the application refuses to start without it. The `dev` profile and the
+tests provide a local key. Anywhere else, set `APP_SECURITY_JWT_SECRET` to a random value of at least 32 bytes, for
+example `openssl rand -base64 48`.
 
 With Docker only, without Java on your machine:
 
@@ -33,10 +37,12 @@ The schema is created and the demo data loaded by Flyway at startup (`src/main/r
 |-----------------|--------------------------------------------------------------------------------------------------------|
 | `establishment` | `Establishment`: a campsite                                                                            |
 | `room`          | `Room` (an accommodation) and the `GET /api/rooms` and `GET /api/rooms/{id}` endpoints                 |
-| `pms`           | `PmsClient`: notifies the PMS (bookings, check-ins). Publishes to RabbitMQ in production, logs locally |
+| `task`          | `CleaningTask` and the `/api/cleaning-tasks` endpoints: plan, list, read, assign, start and complete   |
+| `pms`           | `PmsClient`: notifies the PMS (bookings, check-ins). Logs locally (`app.pms.client=logging`, never loaded by default). The RabbitMQ publisher is not written yet: until it is, the application refuses to start outside the dev profile. Notifications go through an outbox (`pms_notification`) sent in the background |
 | `staff`         | `Staff`: an employee, identified by their `username`                                                   |
-| `security`      | Spring Security configuration (JWT)                                                                    |
-| `tenant`        | `TenantFilter` and `CurrentEstablishment`: the establishment of the current request                    |
+| `security`      | Spring Security configuration (JWT) and the role rules                                                 |
+| `tenant`        | `TenantFilter` and `CurrentEstablishment`: the establishment of the current request, checked against the token |
+| `error`         | `ApiExceptionHandler`: errors as RFC 9457 problem details (`application/problem+json`)                 |
 | `dev`           | `dev` profile only: Swagger UI configuration and a token per demo user (`GET /dev/tokens`)             |
 
 ## Authentication

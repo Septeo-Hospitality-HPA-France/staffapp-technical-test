@@ -20,7 +20,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
  */
 public final class TestJwtFactory {
 
-    // Must match app.security.jwt.secret in application.yml
+    // Must match app.security.jwt.secret in src/test/resources/config/application.yml and application-dev.yml
     private static final String SECRET = "dev-only-signing-key-for-the-technical-test-0123456789";
 
     private static final Map<String, DemoUser> USERS = Map.of(
@@ -54,6 +54,17 @@ public final class TestJwtFactory {
                 .build();
         var header = JwsHeader.with(MacAlgorithm.HS256).build();
         return ENCODER.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
+    }
+
+    /**
+     * Returns a token valid for one hour carrying exactly the given claims, to test malformed tokens.
+     */
+    public static String tokenWithClaims(Map<String, Object> claims) {
+        var now = Instant.now();
+        var builder = JwtClaimsSet.builder().issuedAt(now).expiresAt(now.plus(1, ChronoUnit.HOURS));
+        claims.forEach(builder::claim);
+        var header = JwsHeader.with(MacAlgorithm.HS256).build();
+        return ENCODER.encode(JwtEncoderParameters.from(header, builder.build())).getTokenValue();
     }
 
     public static void main(String[] args) {

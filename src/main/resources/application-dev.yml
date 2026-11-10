@@ -1,4 +1,13 @@
 # Local development: Swagger UI on http://localhost:8080/swagger.html, with a token issued per demo user
+app:
+  security:
+    jwt:
+      # Dev-only signing key, never used outside the dev profile
+      secret: dev-only-signing-key-for-the-technical-test-0123456789
+  pms:
+    # No RabbitMQ locally: the PMS notifications are logged
+    client: logging
+
 springdoc:
   api-docs:
     enabled: true
