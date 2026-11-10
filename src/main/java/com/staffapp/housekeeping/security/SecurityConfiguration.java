@@ -1,5 +1,6 @@
 package com.staffapp.housekeeping.security;
 
+import com.staffapp.housekeeping.error.ProblemResponses;
 import com.staffapp.housekeeping.tenant.TenantFilter;
 import java.nio.charset.StandardCharsets;
 import javax.crypto.spec.SecretKeySpec;
@@ -7,6 +8,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -20,6 +23,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.util.Assert;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 /**
@@ -36,6 +40,9 @@ public class SecurityConfiguration {
     public static final String ROLE_CLAIM = "role";
 
     /**
+     * The roles are checked here, by URL, rather than with {@code @PreAuthorize}: the security chain runs before the
+     * request body is read, so a forbidden action is always a 403, whatever its body.
+     * <p>
      * The {@link TenantFilter} is created here rather than declared as a bean: Spring Boot would otherwise also register
      * it as a servlet filter, outside the security chain, where its position relative to authentication is implicit.
      */
@@ -46,9 +53,17 @@ public class SecurityConfiguration {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
+                .authorizeHttpRequests(authorize -> authorize
+                        // "Only managers plan the cleaning"
+                        .requestMatchers(HttpMethod.POST, "/api/cleaning-tasks").hasRole("MANAGER")
+                        .anyRequest().authenticated())
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+                // Same problem details format as the errors of the controllers. Only authenticated requests get here:
+                // an anonymous one goes to the authentication entry point, a 401
+                .exceptionHandling(exceptions -> exceptions.accessDeniedHandler((request, response, denied) ->
+                        ProblemResponses.write(exceptionResolver, request, response,
+                                new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to do this"))))
                 .addFilterAfter(new TenantFilter(exceptionResolver), AuthorizationFilter.class);
         return http.build();
     }
