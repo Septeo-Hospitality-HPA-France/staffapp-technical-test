@@ -47,4 +47,18 @@ class CleaningTaskController {
     CleaningTaskResponse get(@PathVariable Long id) {
         return taskService.get(id, CurrentEstablishment.getId());
     }
+
+    /**
+     * Action endpoints rather than a PATCH of the status: the client states what it does, and cannot ask for a status
+     * the workflow does not allow, such as DONE directly.
+     */
+    @PostMapping("/{id}/start")
+    CleaningTaskResponse start(@PathVariable Long id) {
+        return taskService.start(id, CurrentEstablishment.getId());
+    }
+
+    @PostMapping("/{id}/complete")
+    CleaningTaskResponse complete(@PathVariable Long id) {
+        return taskService.complete(id, CurrentEstablishment.getId());
+    }
 }
