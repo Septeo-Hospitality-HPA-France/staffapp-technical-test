@@ -19,6 +19,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.util.Assert;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 /**
@@ -52,9 +53,17 @@ public class SecurityConfiguration {
         return http.build();
     }
 
+    /**
+     * The signing key has no default value: without {@code app.security.jwt.secret} (in production, the
+     * {@code APP_SECURITY_JWT_SECRET} environment variable), the application refuses to start rather than accept tokens
+     * signed with a key anyone can read.
+     */
     @Bean
     JwtDecoder jwtDecoder(@Value("${app.security.jwt.secret}") String secret) {
-        var key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        var bytes = secret.getBytes(StandardCharsets.UTF_8);
+        // Nimbus would only reject a short key on the first request: fail at startup instead (RFC 7518, section 3.2)
+        Assert.isTrue(bytes.length >= 32, "The JWT signing key must be at least 256 bits (32 bytes) for HS256");
+        var key = new SecretKeySpec(bytes, "HmacSHA256");
         return NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
     }
 

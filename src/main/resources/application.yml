@@ -10,11 +10,9 @@ spring:
     hibernate:
       ddl-auto: validate
 
-app:
-  security:
-    jwt:
-      # Dev-only signing key, shared with TestJwtFactory
-      secret: dev-only-signing-key-for-the-technical-test-0123456789
+# No JWT signing key here on purpose: anyone reading this file could sign their own tokens. Set
+# APP_SECURITY_JWT_SECRET (at least 32 bytes): the application refuses to start without it. The dev profile and the
+# tests provide a local key.
 
 # Swagger UI and the OpenAPI description are only served with the dev profile (see application-dev.yml)
 springdoc:

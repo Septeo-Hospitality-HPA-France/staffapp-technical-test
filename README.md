@@ -14,9 +14,13 @@ If you have Java 21 or later, you can also build and test directly on your machi
 
 ```bash
 ./mvnw clean test                 # runs the tests (Testcontainers starts PostgreSQL on its own)
-docker compose up -d              # starts PostgreSQL locally, port 5433
-./mvnw spring-boot:run            # starts the API on http://localhost:8080
+docker compose up -d postgres     # starts PostgreSQL only, port 5433
+./mvnw spring-boot:run "-Dspring-boot.run.profiles=dev"   # starts the API on http://localhost:8080
 ```
+
+The JWT signing key has no default value: the application refuses to start without it. The `dev` profile and the
+tests provide a local key. Anywhere else, set `APP_SECURITY_JWT_SECRET` to a random value of at least 32 bytes, for
+example `openssl rand -base64 48`.
 
 With Docker only, without Java on your machine:
 

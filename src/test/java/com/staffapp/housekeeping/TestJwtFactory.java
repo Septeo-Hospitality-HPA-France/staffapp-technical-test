@@ -20,7 +20,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
  */
 public final class TestJwtFactory {
 
-    // Must match app.security.jwt.secret in application.yml
+    // Must match app.security.jwt.secret in src/test/resources/config/application.yml and application-dev.yml
     private static final String SECRET = "dev-only-signing-key-for-the-technical-test-0123456789";
 
     private static final Map<String, DemoUser> USERS = Map.of(
