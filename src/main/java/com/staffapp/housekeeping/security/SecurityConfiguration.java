@@ -1,7 +1,9 @@
 package com.staffapp.housekeeping.security;
 
+import com.staffapp.housekeeping.tenant.TenantFilter;
 import java.nio.charset.StandardCharsets;
 import javax.crypto.spec.SecretKeySpec;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +18,8 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 /**
  * Stateless JWT authentication. A token carries the username ({@code sub}), the establishment
@@ -30,14 +34,21 @@ public class SecurityConfiguration {
     public static final String ESTABLISHMENT_CLAIM = "establishment_id";
     public static final String ROLE_CLAIM = "role";
 
+    /**
+     * The {@link TenantFilter} is created here rather than declared as a bean: Spring Boot would otherwise also register
+     * it as a servlet filter, outside the security chain, where its position relative to authentication is implicit.
+     */
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(
+            HttpSecurity http, @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver)
+            throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
                 .oauth2ResourceServer(resourceServer -> resourceServer
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+                .addFilterAfter(new TenantFilter(exceptionResolver), AuthorizationFilter.class);
         return http.build();
     }
 
