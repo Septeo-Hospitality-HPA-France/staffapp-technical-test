@@ -1,6 +1,7 @@
 package com.staffapp.housekeeping.task;
 
 import com.staffapp.housekeeping.error.NotFoundException;
+import com.staffapp.housekeeping.pms.PmsOutbox;
 import com.staffapp.housekeeping.room.RoomRepository;
 import com.staffapp.housekeeping.staff.Staff;
 import com.staffapp.housekeeping.staff.StaffRepository;
@@ -22,13 +23,15 @@ public class CleaningTaskService {
     private final CleaningTaskRepository taskRepository;
     private final RoomRepository roomRepository;
     private final StaffRepository staffRepository;
+    private final PmsOutbox pmsOutbox;
     private final Clock clock;
 
     public CleaningTaskService(CleaningTaskRepository taskRepository, RoomRepository roomRepository,
-                               StaffRepository staffRepository, Clock clock) {
+                               StaffRepository staffRepository, PmsOutbox pmsOutbox, Clock clock) {
         this.taskRepository = taskRepository;
         this.roomRepository = roomRepository;
         this.staffRepository = staffRepository;
+        this.pmsOutbox = pmsOutbox;
         this.clock = clock;
     }
 
@@ -62,6 +65,36 @@ public class CleaningTaskService {
     @Transactional(readOnly = true)
     public CleaningTaskResponse get(Long id, Long establishmentId) {
         return CleaningTaskResponse.from(findTask(id, establishmentId));
+    }
+
+    /**
+     * Marks a task as started, whoever it is assigned to: any employee of the campsite can take it over.
+     *
+     * @throws NotFoundException          if the task is not in the establishment
+     * @throws InvalidTransitionException if the task is not to do
+     */
+    @Transactional
+    public CleaningTaskResponse start(Long id, Long establishmentId) {
+        var task = findTask(id, establishmentId);
+        task.start(clock.instant());
+        return CleaningTaskResponse.from(task);
+    }
+
+    /**
+     * Marks a task as done and hands the room over. In one transaction: the task is done, the room is marked cleaned
+     * and the PMS notification is recorded, or none of them is. The notification is sent after the commit, by the
+     * outbox relay: the PMS is never told a room is clean before it really is.
+     *
+     * @throws NotFoundException          if the task is not in the establishment
+     * @throws InvalidTransitionException if the task is not in progress
+     */
+    @Transactional
+    public CleaningTaskResponse complete(Long id, Long establishmentId) {
+        var task = findTask(id, establishmentId);
+        var now = clock.instant();
+        task.complete(now);
+        pmsOutbox.roomCleaned(task.getId(), task.getRoom().getId(), now);
+        return CleaningTaskResponse.from(task);
     }
 
     private CleaningTask findTask(Long id, Long establishmentId) {

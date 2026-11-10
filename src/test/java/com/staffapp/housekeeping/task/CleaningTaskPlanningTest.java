@@ -55,6 +55,7 @@ class CleaningTaskPlanningTest {
 
     @AfterEach
     void deleteTasks() {
+        jdbcTemplate.update("DELETE FROM pms_notification");
         jdbcTemplate.update("DELETE FROM cleaning_task");
     }
 

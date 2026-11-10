@@ -7,3 +7,6 @@ app:
       secret: dev-only-signing-key-for-the-technical-test-0123456789
   pms:
     client: logging
+    # The tests run the outbox relay themselves, to control its timing
+    relay:
+      enabled: false
