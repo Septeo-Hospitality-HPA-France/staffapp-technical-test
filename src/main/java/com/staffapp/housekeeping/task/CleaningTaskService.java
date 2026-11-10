@@ -101,6 +101,19 @@ public class CleaningTaskService {
     }
 
     /**
+     * Assigns a task to an employee of the establishment, or hands it over to another one.
+     *
+     * @throws NotFoundException          if the task or the employee is not in the establishment
+     * @throws TaskNotModifiableException if the task is done
+     */
+    @Transactional
+    public CleaningTaskResponse assign(Long id, Long establishmentId, Long assigneeId) {
+        var task = findTask(id, establishmentId);
+        task.assignTo(findStaff(assigneeId, establishmentId));
+        return CleaningTaskResponse.from(task);
+    }
+
+    /**
      * Lists the tasks of the establishment of a day, of a status, or both, by day, room number and id: a stable order,
      * so that a task never appears on two pages.
      */

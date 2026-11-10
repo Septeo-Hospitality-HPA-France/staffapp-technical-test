@@ -54,8 +54,9 @@ public class SecurityConfiguration {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        // "Only managers plan the cleaning"
+                        // "Only managers plan the cleaning": create and assign
                         .requestMatchers(HttpMethod.POST, "/api/cleaning-tasks").hasRole("MANAGER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/cleaning-tasks/*").hasRole("MANAGER")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
