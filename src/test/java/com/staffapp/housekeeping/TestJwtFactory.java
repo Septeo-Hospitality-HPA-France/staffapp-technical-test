@@ -56,6 +56,17 @@ public final class TestJwtFactory {
         return ENCODER.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
     }
 
+    /**
+     * Returns a token valid for one hour carrying exactly the given claims, to test malformed tokens.
+     */
+    public static String tokenWithClaims(Map<String, Object> claims) {
+        var now = Instant.now();
+        var builder = JwtClaimsSet.builder().issuedAt(now).expiresAt(now.plus(1, ChronoUnit.HOURS));
+        claims.forEach(builder::claim);
+        var header = JwsHeader.with(MacAlgorithm.HS256).build();
+        return ENCODER.encode(JwtEncoderParameters.from(header, builder.build())).getTokenValue();
+    }
+
     public static void main(String[] args) {
         USERS.keySet().stream().sorted().forEach(username -> System.out.println(username + ": " + token(username)));
     }
