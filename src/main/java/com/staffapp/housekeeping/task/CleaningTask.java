@@ -77,8 +77,8 @@ public class CleaningTask {
     public static CleaningTask plan(
             Room room, LocalDate scheduledOn, Staff assignee, String comment, String createdBy, Instant now) {
         var establishment = Objects.requireNonNull(room.getEstablishment(), "room.establishment");
-        if (assignee != null && !establishment.getId().equals(assignee.getEstablishment().getId())) {
-            throw new IllegalArgumentException("The assignee must belong to the establishment of the room");
+        if (assignee != null) {
+            requireSameEstablishment(establishment, assignee);
         }
         if (comment != null && comment.length() > MAX_COMMENT_LENGTH) {
             throw new IllegalArgumentException("The comment must not exceed " + MAX_COMMENT_LENGTH + " characters");
@@ -114,6 +114,26 @@ public class CleaningTask {
         moveTo(CleaningTaskStatus.DONE);
         doneAt = now;
         room.markCleaned(now);
+    }
+
+    /**
+     * Assigns the task, or hands it over to another employee, until it is done.
+     *
+     * @throws TaskNotModifiableException if the task is done
+     * @throws IllegalArgumentException   if the employee belongs to another establishment
+     */
+    public void assignTo(Staff staff) {
+        if (status == CleaningTaskStatus.DONE) {
+            throw new TaskNotModifiableException("A done task cannot be reassigned");
+        }
+        requireSameEstablishment(establishment, staff);
+        assignee = staff;
+    }
+
+    private static void requireSameEstablishment(Establishment establishment, Staff staff) {
+        if (!establishment.getId().equals(staff.getEstablishment().getId())) {
+            throw new IllegalArgumentException("The assignee must belong to the establishment of the room");
+        }
     }
 
     private void moveTo(CleaningTaskStatus next) {

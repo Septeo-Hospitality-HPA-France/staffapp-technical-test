@@ -106,6 +106,36 @@ class CleaningTaskTest {
         assertThat(task.getStatus()).isEqualTo(CleaningTaskStatus.TODO);
     }
 
+    @Test
+    @DisplayName("A task to do or in progress can be assigned, or reassigned")
+    void aTaskCanBeAssignedUntilDone() {
+        var alice = staff(lesPins);
+        var bob = staff(lesPins);
+
+        task.assignTo(alice);
+        task.start(STARTED_AT);
+        task.assignTo(bob);
+
+        assertThat(task.getAssignee()).isSameAs(bob);
+    }
+
+    @Test
+    @DisplayName("A done task cannot be reassigned")
+    void aDoneTaskCannotBeReassigned() {
+        task.start(STARTED_AT);
+        task.complete(DONE_AT);
+
+        assertThatThrownBy(() -> task.assignTo(staff(lesPins)))
+                .isInstanceOf(TaskNotModifiableException.class)
+                .hasMessage("A done task cannot be reassigned");
+    }
+
+    @Test
+    @DisplayName("A task cannot be assigned to an employee of another establishment")
+    void refusesToAssignAnEmployeeOfAnotherEstablishment() {
+        assertThatIllegalArgumentException().isThrownBy(() -> task.assignTo(staff(establishment(2L))));
+    }
+
     private static Establishment establishment(Long id) {
         var establishment = mock(Establishment.class);
         when(establishment.getId()).thenReturn(id);
